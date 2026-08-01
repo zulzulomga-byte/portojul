@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSGN.JULL — Order Form</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --lime:#D6FF3D;
+    --amber:#FFB703;
+    --amber-deep:#E08E00;
+    --ink:#111013;
+    --card:#1A191D;
+    --cream:#F3F2EC;
+    --cream-light:#F1EFE4;
+    --stroke: rgba(243,242,236,0.12);
+    --stroke-strong: rgba(243,242,236,0.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--cream);
+    font-family:Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,183,3,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(214,255,61,0.06), transparent 55%);
+  }
+  .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    padding:28px 24px 80px;
+  }
+
+  /* ---- header ---- */
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    padding-bottom:18px;
+    border-bottom:2px dashed var(--stroke-strong);
+    margin-bottom:20px;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .brand h1{
+    font-family:Arial,sans-serif;
+    font-size:clamp(28px,4vw,42px);
+    margin:0;
+    letter-spacing:-0.01em;
+    line-height:1;
+    color:var(--cream);
+  }
+  .brand .dot{color:var(--lime);}
+  .brand small{
+    font-family:Arial,sans-serif;
+    font-size:11px;
+    color:var(--amber);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  .header-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .pill-btn{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    border:2px solid var(--stroke-strong);
+    background:transparent;
+    color:var(--cream);
+    border-radius:999px;
+    padding:8px 14px;
+    font-family:Arial,sans-serif;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.03em;
+    cursor:pointer;
+  }
+  .pill-btn:hover{border-color:var(--amber);color:var(--amber);}
+  .pill-btn.active{background:var(--amber);border-color:var(--amber);color:var(--ink);}
+  .lang-toggle{
+    display:flex;
+    border:2px solid var(--stroke-strong);
+    border-radius:999px;
+    overflow:hidden;
+    font-family:Arial,sans-serif;
+    font-size:12px;
+    font-weight:700;
+  }
+  .lang-toggle button{
+    border:none;
+    background:transparent;
+    padding:8px 16px;
+    cursor:pointer;
+    color:var(--cream);
+    letter-spacing:.05em;
+  }
+  .lang-toggle button.active{
+    background:var(--lime);
+    color:var(--ink);
+  }
+
+  /* ---- info panel (guide + pricelist) ---- */
+  .info-panel{
+    display:none;
+    background:var(--card);
+    border:1px solid var(--stroke);
+    border-radius:6px;
+    padding:22px 24px;
+    margin-bottom:24px;
+  }
+  .info-panel.open{display:block;}
+  .info-panel h3{
+    font-family:Arial,sans-serif;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--lime);
+    margin:0 0 12px;
+  }
+  .info-panel .info-block{margin-bottom:22px;}
+  .info-panel .info-block:last-child{margin-bottom:0;}
+  .guide-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;}
+  .guide-list li{
+    display:flex;
+    gap:10px;
+    font-size:13px;
+    line-height:1.5;
+    color:var(--cream);
+    opacity:.9;
+  }
+  .guide-list b{color:var(--amber);font-weight:700;min-width:118px;flex-shrink:0;}
+  .price-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .price-table th{
+    text-align:left;
+    font-family:Arial,sans-serif;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--amber);
+    padding:6px 8px;
+    border-bottom:1px solid var(--stroke-strong);
+  }
+  .price-table td{
+    padding:7px 8px;
+    border-bottom:1px solid var(--stroke);
+    color:var(--cream);
+    opacity:.9;
+    vertical-align:top;
+  }
+  .price-table td.num{color:var(--lime);font-family:Arial,sans-serif;white-space:nowrap;}
+  .price-note{
+    margin-top:12px;
+    font-size:11.5px;
+    color:var(--cream);
+    opacity:.65;
+    line-height:1.6;
+  }
+
+  /* ---- layout ---- */
+  .grid{
+    display:grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap:32px;
+    align-items:start;
+  }
+  @media (max-width: 880px){
+    .grid{grid-template-columns:1fr;}
+  }
+
+  /* ---- form card ---- */
+  .card{
+    background:var(--card);
+    border:1px solid var(--stroke);
+    border-radius:6px;
+    padding:26px 26px 30px;
+  }
+  .section-label{
+    font-family:Arial,sans-serif;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--lime);
+    font-weight:700;
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-label::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--stroke);
+  }
+  .section{margin-bottom:30px;}
+  .section:last-child{margin-bottom:0;}
+
+  .field-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  .field-row.single{grid-template-columns:1fr;}
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    margin-bottom:6px;
+    color:var(--cream);
+    opacity:.85;
+  }
+  .field input[type=text],
+  .field input[type=number],
+  .field input[type=date],
+  .field select,
+  .field textarea{
+    width:100%;
+    border:1.5px solid var(--stroke);
+    background:#221F24;
+    border-radius:4px;
+    padding:9px 10px;
+    font-family:Arial,sans-serif;
+    font-size:14px;
+    color:var(--cream);
+    transition:border-color .15s;
+  }
+  .field select{appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23D6FF3D'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center;background-size:16px;padding-right:32px;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus{
+    outline:none;
+    border-color:var(--lime);
+  }
+  .field textarea{resize:vertical;min-height:64px;}
+  .field-hint{font-size:11px;color:var(--amber);opacity:.85;margin-top:5px;}
+
+  .chip-select{display:flex;flex-wrap:wrap;gap:7px;}
+  .chip{
+    border:1.5px solid var(--stroke);
+    background:#221F24;
+    color:var(--cream);
+    border-radius:999px;
+    padding:7px 14px;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .chip:hover{border-color:var(--amber);}
+  .chip.active{border-color:var(--lime);background:rgba(214,255,61,0.1);color:var(--lime);}
+  #conceptCustom{
+    width:100%;
+    border:1.5px solid var(--stroke);
+    background:#221F24;
+    border-radius:4px;
+    padding:9px 10px;
+    font-family:Arial,sans-serif;
+    font-size:14px;
+    color:var(--cream);
+  }
+  #conceptCustom:focus{outline:none;border-color:var(--lime);}
+
+  /* ---- deadline calendar ---- */
+  .date-trigger{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border:1.5px solid var(--stroke);
+    background:#221F24;
+    border-radius:4px;
+    padding:9px 10px;
+    font-family:Arial,sans-serif;
+    font-size:14px;
+    color:var(--cream);
+    cursor:pointer;
+    text-align:left;
+  }
+  .date-trigger:hover{border-color:var(--amber);}
+  .date-trigger.has-value{color:var(--lime);font-weight:600;}
+  .cal-icon{opacity:.8;}
+  .calendar-pop{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:1000;
+    width:280px;
+    max-width:92vw;
+    background:var(--card);
+    border:1.5px solid var(--stroke-strong);
+    border-radius:8px;
+    padding:14px;
+    box-shadow:0 18px 36px -14px rgba(0,0,0,0.7);
+  }
+  .calendar-pop.open{display:block;}
+  .cal-quick{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:12px;
+    padding-bottom:12px;
+    border-bottom:1px dashed var(--stroke);
+  }
+  .cal-quick button{
+    border:1px solid var(--stroke-strong);
+    background:transparent;
+    color:var(--cream);
+    border-radius:999px;
+    padding:5px 10px;
+    font-size:11px;
+    font-family:Arial,sans-serif;
+    cursor:pointer;
+  }
+  .cal-quick button:hover{border-color:var(--lime);color:var(--lime);}
+  .cal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .cal-month-label{
+    font-family:Arial,sans-serif;
+    font-size:12px;
+    font-weight:700;
+    color:var(--lime);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+  }
+  .cal-nav{
+    border:1px solid var(--stroke-strong);
+    background:transparent;
+    color:var(--cream);
+    border-radius:4px;
+    width:26px;height:26px;
+    cursor:pointer;
+    font-size:14px;
+    line-height:1;
+  }
+  .cal-nav:hover{border-color:var(--amber);color:var(--amber);}
+  .cal-weekdays{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    margin-bottom:4px;
+  }
+  .cal-weekdays span{
+    text-align:center;
+    font-size:10px;
+    font-family:Arial,sans-serif;
+    color:var(--amber);
+    opacity:.8;
+  }
+  .cal-days{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:2px;
+  }
+  .cal-day{
+    aspect-ratio:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    border-radius:5px;
+    cursor:pointer;
+    color:var(--cream);
+    background:transparent;
+    border:1px solid transparent;
+  }
+  .cal-day:hover:not(.disabled):not(.empty){border-color:var(--amber);}
+  .cal-day.empty{cursor:default;}
+  .cal-day.disabled{color:rgba(243,242,236,0.25);cursor:not-allowed;}
+  .cal-day.today{border-color:var(--amber);color:var(--amber);font-weight:700;}
+  .cal-day.selected{background:var(--lime);color:var(--ink);font-weight:700;border-color:var(--lime);}
+
+  .field label{display:flex;align-items:baseline;gap:6px;}
+  .opt-tag{
+    font-family:Arial,sans-serif;
+    font-size:10px;
+    font-weight:700;
+    color:var(--amber);
+    opacity:.85;
+    text-transform:none;
+    letter-spacing:0;
+  }
+  .section-label .opt-tag{margin-left:-2px;font-size:10px;}
+
+  .radio-pair{display:flex;gap:8px;}
+  .radio-pair label{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    border:1.5px solid var(--stroke);
+    border-radius:4px;
+    padding:9px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    background:#221F24;
+    color:var(--cream);
+  }
+  .radio-pair input{accent-color:var(--lime);}
+  .radio-pair label:has(input:checked){
+    border-color:var(--lime);
+    background:rgba(214,255,61,0.08);
+    color:var(--lime);
+  }
+
+  .check-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
+    gap:8px;
+  }
+  .check-item{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    border:1.5px solid var(--stroke);
+    border-radius:4px;
+    padding:8px 9px;
+    font-size:13px;
+    cursor:pointer;
+    background:#221F24;
+    color:var(--cream);
+  }
+  .check-item input{accent-color:var(--lime);}
+  .check-item:has(input:checked){
+    border-color:var(--lime);
+    background:rgba(214,255,61,0.08);
+    color:var(--lime);
+  }
+
+  /* ---- price calculator block ---- */
+  .calc-box{
+    border:1.5px solid var(--stroke);
+    border-radius:6px;
+    padding:14px 16px;
+    background:#221F24;
+    margin-top:4px;
+  }
+  .calc-line{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:13px;
+    padding:5px 0;
+    color:var(--cream);
+    opacity:.85;
+  }
+  .calc-line.total{
+    border-top:1px dashed var(--stroke-strong);
+    margin-top:6px;
+    padding-top:10px;
+    opacity:1;
+    font-weight:700;
+    font-family:Arial,sans-serif;
+  }
+  .calc-line.total .v{color:var(--lime);font-size:16px;}
+  .calc-line .v{font-family:Arial,sans-serif;font-weight:600;}
+
+  /* ---- receipt (the one bright/paper panel) ---- */
+  .receipt-outer{position:sticky;top:24px;}
+  .receipt{
+    background:var(--cream-light);
+    color:var(--ink);
+    font-family:Arial,sans-serif;
+    position:relative;
+    padding:0 0 24px;
+    box-shadow:0 20px 40px -18px rgba(0,0,0,0.6);
+  }
+  .zig{
+    height:14px;
+    width:100%;
+    background:
+      linear-gradient(135deg,var(--ink) 25%,transparent 25%) 0 0,
+      linear-gradient(225deg,var(--ink) 25%,transparent 25%) 0 0;
+    background-size:16px 16px;
+    background-repeat:repeat-x;
+    background-color:var(--cream-light);
+  }
+  .zig.bottom{transform:rotate(180deg);}
+
+  .receipt-head{
+    padding:20px 24px 14px;
+    text-align:center;
+    border-bottom:1px dashed rgba(17,16,19,0.25);
+  }
+  .receipt-head .rtitle{
+    font-family:Arial,sans-serif;
+    font-size:20px;
+    letter-spacing:.02em;
+  }
+  .receipt-head .rsub{
+    font-size:10px;
+    color:var(--amber-deep);
+    margin-top:4px;
+    letter-spacing:.08em;
+    font-weight:700;
+  }
+  .receipt-body{padding:16px 24px 0;font-size:12.5px;}
+  .rline{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:4px 0;
+    border-bottom:1px dotted rgba(17,16,19,0.2);
+  }
+  .rline .k{color:rgba(17,16,19,0.55);}
+  .rline .v{font-weight:700;text-align:right;max-width:62%;word-break:break-word;}
+  .rline .note{display:block;font-weight:400;font-style:italic;font-size:11px;color:rgba(17,16,19,0.55);}
+  .rgroup-title{
+    margin:16px 0 4px;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--amber-deep);
+    font-weight:700;
+  }
+  .rtotal{
+    margin-top:10px;
+    background:var(--ink);
+    color:#fff;
+    padding:10px 14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .rtotal .v{color:var(--lime);font-size:16px;}
+  .status-badge{
+    display:inline-block;
+    margin-top:12px;
+    padding:6px 14px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.04em;
+  }
+  .status-badge.paid{background:var(--lime);color:var(--ink);}
+  .status-badge.dp{background:var(--amber);color:var(--ink);}
+  .files-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .file-chip{
+    border:1px solid var(--ink);
+    border-radius:3px;
+    padding:2px 8px;
+    font-size:11px;
+    font-weight:700;
+  }
+  .receipt-foot{
+    text-align:center;
+    padding:18px 24px 0;
+    font-size:10px;
+    color:rgba(17,16,19,0.5);
+    letter-spacing:.06em;
+  }
+  .receipt-actions{display:flex;gap:8px;margin-top:14px;}
+  .print-btn{
+    flex:1;
+    display:block;
+    padding:12px;
+    background:var(--lime);
+    color:var(--ink);
+    border:none;
+    border-radius:4px;
+    font-family:Arial,sans-serif;
+    font-weight:700;
+    font-size:12.5px;
+    letter-spacing:.03em;
+    cursor:pointer;
+    text-transform:uppercase;
+    text-align:center;
+  }
+  .print-btn:hover{background:var(--amber);}
+  .print-btn.secondary{background:transparent;border:2px solid var(--lime);color:var(--lime);padding:10px;}
+  .print-btn.secondary:hover{background:var(--lime);color:var(--ink);}
+  .print-btn:disabled{opacity:.6;cursor:wait;}
+  .text-link{
+    display:block;
+    width:100%;
+    background:none;
+    border:none;
+    color:var(--cream);
+    opacity:.55;
+    font-family:Arial,sans-serif;
+    font-size:11px;
+    margin-top:10px;
+    cursor:pointer;
+    text-decoration:underline;
+    text-align:center;
+  }
+  .text-link:hover{opacity:.9;color:var(--amber);}
+  .order-id{font-size:10px;color:rgba(17,16,19,0.5);text-align:center;margin-top:6px;}
+  .order-id b{color:var(--ink);}
+
+  @media print{
+    header,.card,.print-btn,.receipt-actions,.text-link,.info-panel{display:none !important;}
+    body{background:#fff;background-image:none;}
+    .receipt-outer{position:static;}
+    .receipt{box-shadow:none;border:1px solid #000;}
+    .grid{display:block;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>DSGN<span class="dot">.</span>JULL</h1>
+      <small id="tagline">Formulir Pesanan Desain</small>
+    </div>
+    <div class="header-actions">
+      <button class="pill-btn" id="infoToggle" onclick="toggleInfo()" data-t="infoBtn">❓ Panduan &amp; Harga</button>
+      <div class="lang-toggle">
+        <button id="btn-id" class="active" onclick="setLang('id')">ID</button>
+        <button id="btn-en" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="info-panel" id="infoPanel">
+    <div class="info-block">
+      <h3 data-t="guideTitle">Cara Mengisi Form</h3>
+      <ul class="guide-list" id="guideList"></ul>
+    </div>
+    <div class="info-block">
+      <h3 data-t="priceTitle">Daftar Harga</h3>
+      <table class="price-table" id="priceTable"></table>
+      <p class="price-note" data-t="priceNote">Semua harga sudah termasuk 2x revisi. Revisi tambahan +Rp10.000/2x. Urgent +Rp15.000. Source file belum termasuk. Desain dengan tingkat kesulitan tinggi bisa dikenakan biaya tambahan (isi di kolom "Biaya Tambahan Lain").</p>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ===== FORM ===== -->
+    <div class="card">
+
+      <div class="section">
+        <p class="section-label" data-t="secClient">Informasi Client</p>
+        <div class="field-row">
+          <div class="field">
+            <label data-t="lFullName">Nama Lengkap</label>
+            <input type="text" id="fullName" oninput="render()">
+          </div>
+          <div class="field">
+            <label>Instagram</label>
+            <input type="text" id="instagram" placeholder="@username" oninput="render()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>WhatsApp <span class="opt-tag" data-t="optTag">*opsional</span></label>
+            <input type="text" id="whatsapp" oninput="render()">
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input type="text" id="email" oninput="render()">
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <p class="section-label" data-t="secProject">Detail Proyek</p>
+        <div class="field-row">
+          <div class="field">
+            <label><span id="lServiceLabel" data-t="lService">Layanan</span> <span class="opt-tag" data-t="optTag">*opsional</span></label>
+            <select id="service" onchange="onServiceChange()"></select>
+          </div>
+          <div class="field">
+            <label><span id="qtyLabel">Jumlah</span> <span class="opt-tag" data-t="optTag">*opsional</span></label>
+            <input type="number" id="quantity" min="1" value="1" oninput="render()" onblur="clampQty(); render()">
+          </div>
+        </div>
+        <div class="field-row" id="conceptRow" style="display:none;">
+          <div class="field">
+            <label data-t="lConceptCount">Jumlah Konsep</label>
+            <input type="number" id="conceptCount" min="1" value="1" oninput="render()">
+            <div class="field-hint" data-t="conceptHint">+Rp10.000 / konsep tambahan (estimasi)</div>
+          </div>
+          <div></div>
+        </div>
+        <div class="field">
+          <label data-t="lConcept">Konsep Visual</label>
+          <div class="chip-select" id="conceptChips"></div>
+          <input type="text" id="conceptCustom" oninput="onConceptCustomInput()" style="display:none;margin-top:8px;">
+          <input type="hidden" id="concept" value="">
+        </div>
+        <div class="field-row single">
+          <div class="field" style="position:relative;">
+            <label>Deadline</label>
+            <button type="button" class="date-trigger" id="deadlineDisplay" onclick="toggleCalendar(event)">
+              <span id="deadlineDisplayText" data-t="pickDate">Pilih tanggal</span>
+              <span class="cal-icon">📅</span>
+            </button>
+            <input type="hidden" id="deadline" value="">
+            <div class="calendar-pop" id="calendarPop">
+              <div class="cal-quick" id="calQuick"></div>
+              <div class="cal-header">
+                <button type="button" class="cal-nav" onclick="calShift(-1)">‹</button>
+                <span class="cal-month-label" id="calMonthLabel"></span>
+                <button type="button" class="cal-nav" onclick="calShift(1)">›</button>
+              </div>
+              <div class="cal-weekdays" id="calWeekdays"></div>
+              <div class="cal-days" id="calDays"></div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label data-t="lUrgent">Prioritas</label>
+          <div class="radio-pair">
+            <label><input type="radio" name="urgent" value="Ya" onchange="render()"><span data-t="yes">Ya</span></label>
+            <label><input type="radio" name="urgent" value="Tidak" onchange="render()" checked><span data-t="no">Tidak</span></label>
+          </div>
+          <div class="field-hint" data-t="urgentHint">Urgent: +Rp15.000</div>
+        </div>
+        <div class="field">
+          <label><span data-t="lBrief">Tujuan Desain</span> <span class="opt-tag" data-t="optTag">*opsional</span></label>
+          <textarea id="brief" data-tp="briefPh" placeholder="cth: promosi produk baru, undangan digital, dll" oninput="render()"></textarea>
+        </div>
+        <div class="field">
+          <label><span data-t="lRef">Referensi</span> <span class="opt-tag" data-t="optTag">*opsional</span></label>
+          <input type="text" id="reference" placeholder="link / nama file" oninput="render()">
+        </div>
+      </div>
+
+
+      <div class="section">
+        <p class="section-label"><span data-t="secOutput">File Hasil</span> <span class="opt-tag" data-t="optTag">*opsional</span></p>
+        <div class="check-grid" id="outputs">
+          <label class="check-item"><input type="checkbox" value="PNG" onchange="render()">PNG</label>
+          <label class="check-item"><input type="checkbox" value="JPG" onchange="render()">JPG</label>
+          <label class="check-item"><input type="checkbox" value="PDF" onchange="render()">PDF</label>
+          <label class="check-item"><input type="checkbox" value="SVG" onchange="render()">SVG</label>
+          <label class="check-item"><input type="checkbox" value="Affinity" onchange="render()">Affinity</label>
+        </div>
+      </div>
+
+      <div class="section">
+        <p class="section-label" data-t="secPayment">Pembayaran</p>
+        <div class="field-row">
+          <div class="field">
+            <label data-t="lRevisiExtra">Revisi Tambahan (blok 2x)</label>
+            <input type="number" id="revisiExtra" min="0" value="0" oninput="render()">
+            <div class="field-hint" data-t="revisiHint">Isi 1 = +2x revisi (Rp10.000), isi 2 = +4x revisi (Rp20.000), dst</div>
+          </div>
+          <div class="field">
+            <label data-t="lAddonPrice">Biaya Tambahan Lain (Source File / Desain Kompleks)</label>
+            <input type="number" id="addonPrice" min="0" value="0" oninput="render()">
+            <div class="field-hint" data-t="addonHint">Opsional — isi manual jika ada biaya di luar yang otomatis dihitung</div>
+          </div>
+        </div>
+        <div class="field">
+          <label data-t="lStatus">Status Pembayaran</label>
+          <div class="radio-pair">
+            <label><input type="radio" name="status" value="dp" onchange="render()" checked>DP 50%</label>
+            <label><input type="radio" name="status" value="paid" onchange="render()"><span data-t="paid">Lunas</span></label>
+          </div>
+        </div>
+        <div class="calc-box" id="calcBox"></div>
+      </div>
+
+    </div>
+
+    <!-- ===== RECEIPT ===== -->
+    <div class="receipt-outer">
+      <div class="receipt">
+        <div class="zig top"></div>
+        <div class="receipt-head">
+          <div class="rtitle" data-t="receiptTitle">BUKTI PESANAN</div>
+          <div class="rsub">DSGN.JULL STUDIO</div>
+          <div class="order-id"><b id="orderId">—</b></div>
+        </div>
+        <div class="receipt-body" id="receiptBody"></div>
+        <div class="receipt-foot" data-t="receiptFoot">Terima kasih sudah memesan di DSGN.JULL ✦</div>
+        <div class="zig bottom" style="margin-top:16px;"></div>
+      </div>
+      <div class="receipt-actions">
+        <button class="print-btn" id="btnPng" onclick="downloadPNG()" data-t="downloadPngBtn">📥 Unduh PNG</button>
+        <button class="print-btn secondary" id="btnPdf" onclick="downloadPDF()" data-t="downloadPdfBtn">📥 Unduh PDF</button>
+      </div>
+      <button class="text-link" onclick="window.print()" data-t="printBtn">Cetak biasa</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------------- price list data (from Price_List_Design_Final.pdf) ---------------- */
+const SERVICES = [
+  {id:'poster', group:'', label_id:'Poster Design', label_en:'Poster Design',
+   type:'perUnit', unitPrice:30000, unitLabel_id:'desain', unitLabel_en:'design'},
+
+  {id:'sosmed', group:'', label_id:'Social Media Design', label_en:'Social Media Design',
+   type:'block', baseQty:2, basePrice:40000, extraUnitPrice:20000,
+   unitLabel_id:'desain', unitLabel_en:'design', hasConcept:true, conceptExtraPrice:10000},
+
+  {id:'couple_carousel', group_id:'Couple Design', group_en:'Couple Design',
+   label_id:'Carousel', label_en:'Carousel',
+   type:'block', baseQty:3, basePrice:50000, extraUnitPrice:15000,
+   unitLabel_id:'slide', unitLabel_en:'slide'},
+
+  {id:'couple_giftcard', group_id:'Couple Design', group_en:'Couple Design',
+   label_id:'Gift Card', label_en:'Gift Card',
+   type:'perUnit', unitPrice:30000, unitLabel_id:'desain', unitLabel_en:'design'},
+
+  {id:'couple_digital', group_id:'Couple Design', group_en:'Couple Design',
+   label_id:'Digital Gift / PDF', label_en:'Digital Gift / PDF',
+   type:'block', baseQty:3, basePrice:60000, extraUnitPrice:20000,
+   unitLabel_id:'halaman', unitLabel_en:'page'},
+
+  {id:'cv_simple', group_id:'CV & Portfolio Design', group_en:'CV & Portfolio Design',
+   label_id:'CV Simple', label_en:'CV Simple',
+   type:'perUnit', unitPrice:35000, unitLabel_id:'desain', unitLabel_en:'design'},
+
+  {id:'cv_custom', group_id:'CV & Portfolio Design', group_en:'CV & Portfolio Design',
+   label_id:'CV Custom', label_en:'CV Custom',
+   type:'perUnit', unitPrice:45000, unitLabel_id:'desain', unitLabel_en:'design'},
+
+  {id:'cv_portfolio', group_id:'CV & Portfolio Design', group_en:'CV & Portfolio Design',
+   label_id:'CV + Portfolio', label_en:'CV + Portfolio',
+   type:'perUnit', unitPrice:55000, unitLabel_id:'desain', unitLabel_en:'design'},
+
+  {id:'catalog', group:'', label_id:'Pricelist / Catalog / Menu', label_en:'Pricelist / Catalog / Menu',
+   type:'block', baseQty:1, basePrice:35000, extraUnitPrice:10000,
+   unitLabel_id:'halaman', unitLabel_en:'page'},
+
+  {id:'recap', group:'', label_id:'Visual Recap', label_en:'Visual Recap',
+   type:'perUnit', unitPrice:65000, unitLabel_id:'desain', unitLabel_en:'design'},
+
+  {id:'banner', group:'', label_id:'Banner / Spanduk', label_en:'Banner',
+   type:'perUnit', unitPrice:40000, unitLabel_id:'desain', unitLabel_en:'design'},
+
+  {id:'card', group:'', label_id:'Card Design (Kartu Nama & Undangan Digital)', label_en:'Card Design (Business Card & Digital Invitation)',
+   type:'perUnit', unitPrice:30000, unitLabel_id:'desain', unitLabel_en:'design'},
+
+  {id:'twibbon', group:'', label_id:'Twibbon', label_en:'Twibbon',
+   type:'perUnit', unitPrice:35000, unitLabel_id:'desain', unitLabel_en:'design'},
+
+  {id:'promo', group:'', label_id:'Promo Design', label_en:'Promo Design',
+   type:'perUnit', unitPrice:35000, unitLabel_id:'desain', unitLabel_en:'design'},
+];
+const REVISI_INCLUDED = 2;
+const REVISI_EXTRA_PRICE = 10000;
+const URGENT_PRICE = 15000;
+
+function svcById(id){ return SERVICES.find(s=>s.id===id); }
+
+function calcServiceBase(svc, qty){
+  qty = Math.max(qty||1,1);
+  if(svc.type==='perUnit') return svc.unitPrice*qty;
+  if(svc.type==='block'){
+    if(qty<=svc.baseQty) return svc.basePrice;
+    return svc.basePrice + (qty-svc.baseQty)*svc.extraUnitPrice;
+  }
+  return 0;
+}
+
+/* ---------------- translations ---------------- */
+const T = {
+  id:{
+    tagline:'Formulir Pesanan Desain',
+    infoBtn:'❓ Panduan & Harga',
+    guideTitle:'Cara Mengisi Form',
+    priceTitle:'Daftar Harga',
+    priceNote:'Semua harga sudah termasuk 2x revisi. Revisi tambahan +Rp10.000/2x. Urgent +Rp15.000. Source file belum termasuk. Desain dengan tingkat kesulitan tinggi bisa dikenakan biaya tambahan (isi di kolom "Biaya Tambahan Lain").',
+    secClient:'Informasi Client',
+    secProject:'Detail Proyek',
+    secOutput:'File Hasil',
+    secPayment:'Pembayaran',
+    lFullName:'Nama Lengkap', lService:'Layanan', lQty:'Jumlah', lConcept:'Konsep Visual',
+    lConceptCount:'Jumlah Konsep', conceptHint:'+Rp10.000 / konsep tambahan (estimasi)',
+    pickDate:'Pilih tanggal',
+    lUrgent:'Prioritas', urgentHint:'Urgent: +Rp15.000',
+    lBrief:'Tujuan Desain', briefPh:'cth: promosi produk baru, undangan digital, dll', lRef:'Referensi',
+    lRevisiExtra:'Revisi Tambahan (blok 2x)', revisiHint:'Isi 1 = +2x revisi (Rp10.000), isi 2 = +4x revisi (Rp20.000), dst',
+    lAddonPrice:'Biaya Tambahan Lain (Source File / Desain Kompleks)', addonHint:'Opsional — isi manual jika ada biaya di luar yang otomatis dihitung',
+    lStatus:'Status Pembayaran',
+    yes:'Ya', no:'Tidak', paid:'Lunas',
+    optTag:'*opsional',
+    receiptTitle:'BUKTI PESANAN', receiptFoot:'Terima kasih sudah memesan di DSGN.JULL ✦',
+    printBtn:'Cetak biasa',
+    downloadPngBtn:'📥 Unduh PNG', downloadPdfBtn:'📥 Unduh PDF',
+    downloadError:'Gagal membuat file, coba lagi atau cek koneksi internet.',
+    calc:{base:'Harga Layanan', concept:'Konsep Tambahan', revisi:'Revisi Tambahan', urgent:'Urgent', addon:'Biaya Tambahan Lain', total:'Estimasi Total'},
+    guide:[
+      ['Nama Lengkap','isi nama client.'],
+      ['WhatsApp','nomor aktif untuk konfirmasi pesanan.'],
+      ['Layanan','pilih jenis desain sesuai daftar harga di panel ini.'],
+      ['Jumlah','jumlah desain / slide / halaman yang dipesan.'],
+      ['Jumlah Konsep','khusus Social Media Design — jumlah variasi konsep visual.'],
+      ['Konsep Visual','pilih salah satu gaya, atau pilih "Lainnya" untuk isi sendiri.'],
+      ['Deadline','batas waktu pengerjaan.'],
+      ['Prioritas','pilih "Ya" jika ingin dikerjakan urgent (+Rp15.000).'],
+      ['Tujuan Desain','opsional, jelaskan tujuan/kebutuhan desainnya buat apa.'],
+      ['Referensi','opsional, link atau file contoh desain.'],
+      ['File Hasil','centang format output yang diinginkan.'],
+      ['Revisi Tambahan','isi jika butuh revisi lebih dari 2x gratis, per blok 2x = +Rp10.000.'],
+      ['Biaya Tambahan Lain','opsional, untuk source file / desain kompleks.'],
+      ['Status Pembayaran','pilih DP 50% atau Lunas.'],
+    ],
+    r:{ orderDate:'Tanggal Pesanan', completion:'Tanggal Selesai',
+        client:'Nama', ig:'Instagram', wa:'WhatsApp', service:'Layanan', qty:'Jumlah', concept:'Konsep Visual',
+        conceptCount:'Jumlah Konsep', files:'File Hasil', status:'Status', dp:'DP 50%', paidv:'Lunas', none:'—',
+        urgentyes:'Prioritas (Urgent)', total:'Estimasi Total'
+    }
+  },
+  en:{
+    tagline:'Design Service Order Form',
+    infoBtn:'❓ Guide & Price List',
+    guideTitle:'How to Fill This Form',
+    priceTitle:'Price List',
+    priceNote:'All prices include 2 free revisions. Extra revisions +Rp10,000/2x. Urgent +Rp15,000. Source file not included. Highly complex designs may incur an additional cost (fill in the "Additional Cost" field).',
+    secClient:'Client Information',
+    secProject:'Project Details',
+    secOutput:'Output File',
+    secPayment:'Payment',
+    lFullName:'Full Name', lService:'Service', lQty:'Quantity', lConcept:'Visual Concept',
+    lConceptCount:'Number of Concepts', conceptHint:'+Rp10,000 / extra concept (estimate)',
+    pickDate:'Pick a date',
+    lUrgent:'Urgent', urgentHint:'Urgent: +Rp15,000',
+    lBrief:'Design Purpose', briefPh:'e.g. new product promo, digital invitation, etc.', lRef:'Reference',
+    lRevisiExtra:'Extra Revisions (2x block)', revisiHint:'1 = +2 revisions (Rp10,000), 2 = +4 revisions (Rp20,000), etc.',
+    lAddonPrice:'Other Additional Cost (Source File / Complex Design)', addonHint:'Optional — fill in manually for anything outside the automatic calculation',
+    lStatus:'Payment Status',
+    yes:'Yes', no:'No', paid:'Paid',
+    optTag:'*optional',
+    receiptTitle:'PROJECT RECEIPT', receiptFoot:'Thank you for ordering with DSGN.JULL ✦',
+    printBtn:'Regular print',
+    downloadPngBtn:'📥 Download PNG', downloadPdfBtn:'📥 Download PDF',
+    downloadError:'Failed to generate the file, try again or check your internet connection.',
+    calc:{base:'Service Price', concept:'Extra Concepts', revisi:'Extra Revisions', urgent:'Urgent', addon:'Other Additional Cost', total:'Estimated Total'},
+    guide:[
+      ['Full Name','the client\'s name.'],
+      ['WhatsApp','active number for order confirmation.'],
+      ['Service','pick the design type from the price list in this panel.'],
+      ['Quantity','number of designs / slides / pages ordered.'],
+      ['Number of Concepts','Social Media Design only — number of visual concept variations.'],
+      ['Visual Concept','pick a style, or choose "Other" to type your own.'],
+      ['Deadline','the due date.'],
+      ['Urgent','choose "Yes" for rush handling (+Rp15,000).'],
+      ['Design Purpose','optional, describe what the design is for.'],
+      ['Reference','optional, a link or sample file.'],
+      ['Output File','check the desired output formats.'],
+      ['Extra Revisions','fill in if more than the 2 free revisions are needed, +Rp10,000 per 2x block.'],
+      ['Other Additional Cost','optional, for source file / complex design.'],
+      ['Payment Status','choose DP 50% or Paid.'],
+    ],
+    r:{ orderDate:'Order Date', completion:'Completion Date',
+        client:'Client', ig:'Instagram', wa:'WhatsApp', service:'Service', qty:'Quantity', concept:'Visual Concept',
+        conceptCount:'Number of Concepts', files:'Output Files', status:'Status', dp:'DP 50%', paidv:'Paid', none:'—',
+        urgentyes:'Priority (Urgent)', total:'Estimated Total'
+    }
+  }
+};
+
+let lang = 'id';
+const orderId = 'DSGNJULL-' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + Math.floor(1000+Math.random()*9000);
+
+/* ---------------- build service <select> ---------------- */
+function svcFullLabel(s){
+  const g = lang==='id' ? s.group_id : s.group_en;
+  const label = lang==='id' ? s.label_id : s.label_en;
+  return g ? (g + ' ' + label) : label;
+}
+
+function svcMinQty(svc){
+  if(!svc) return 1;
+  if(svc.type==='block') return svc.baseQty;
+  return svc.minQty || 1;
+}
+
+function buildServiceSelect(){
+  const sel = document.getElementById('service');
+  sel.innerHTML = '';
+  SERVICES.forEach(s=>{
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = svcFullLabel(s);
+    sel.appendChild(opt);
+  });
+}
+
+function clampQty(){
+  const svc = svcById(document.getElementById('service').value);
+  const minQty = svcMinQty(svc);
+  const qtyInput = document.getElementById('quantity');
+  if(qtyInput.value==='' || Number(qtyInput.value) < minQty){
+    qtyInput.value = minQty;
+  }
+}
+
+function onServiceChange(){
+  const svc = svcById(document.getElementById('service').value);
+  document.getElementById('conceptRow').style.display = svc && svc.hasConcept ? 'grid' : 'none';
+  const minQty = svcMinQty(svc);
+  const qtyInput = document.getElementById('quantity');
+  qtyInput.min = minQty;
+  clampQty();
+  const unit = svc ? ' (' + (lang==='id'?svc.unitLabel_id:svc.unitLabel_en) + ', min ' + minQty + ')' : '';
+  document.getElementById('qtyLabel').textContent = T[lang].lQty + unit;
+  render();
+}
+
+/* ---------------- guide + price table render ---------------- */
+function renderInfoPanel(){
+  const ul = document.getElementById('guideList');
+  ul.innerHTML = T[lang].guide.map(([k,v])=>`<li><b>${k}</b><span>${v}</span></li>`).join('');
+
+  const tbl = document.getElementById('priceTable');
+  let rows = '<tr><th>' + (lang==='id'?'Layanan':'Service') + '</th><th>' + (lang==='id'?'Harga Dasar':'Base Price') + '</th></tr>';
+  SERVICES.forEach(s=>{
+    const label = svcFullLabel(s);
+    let priceTxt = '';
+    if(s.type==='perUnit'){
+      priceTxt = 'Rp' + s.unitPrice.toLocaleString('id-ID') + ' / ' + (lang==='id'?s.unitLabel_id:s.unitLabel_en);
+    } else {
+      priceTxt = 'Rp' + s.basePrice.toLocaleString('id-ID') + ' / ' + s.baseQty + ' ' + (lang==='id'?s.unitLabel_id:s.unitLabel_en) + ' (+Rp' + s.extraUnitPrice.toLocaleString('id-ID') + ')';
+    }
+    rows += `<tr><td>${label}</td><td class="num">${priceTxt}</td></tr>`;
+  });
+  tbl.innerHTML = rows;
+}
+
+function toggleInfo(){
+  const p = document.getElementById('infoPanel');
+  const btn = document.getElementById('infoToggle');
+  p.classList.toggle('open');
+  btn.classList.toggle('active');
+}
+
+function setLang(l){
+  lang = l;
+  document.getElementById('btn-id').classList.toggle('active', l==='id');
+  document.getElementById('btn-en').classList.toggle('active', l==='en');
+  document.querySelectorAll('[data-t]').forEach(el=>{
+    const key = el.getAttribute('data-t');
+    if(T[l][key]) el.textContent = T[l][key];
+  });
+  document.querySelectorAll('[data-tp]').forEach(el=>{
+    const key = el.getAttribute('data-tp');
+    if(T[l][key]) el.setAttribute('placeholder', T[l][key]);
+  });
+  const currentSvc = document.getElementById('service').value;
+  buildServiceSelect();
+  document.getElementById('service').value = currentSvc;
+  onServiceChange();
+  renderInfoPanel();
+  buildConceptChips();
+  updateConceptValue();
+  calRender();
+  if(calSelected){
+    document.getElementById('deadlineDisplayText').textContent = calSelected.toLocaleDateString(lang==='id'?'id-ID':'en-GB', {day:'2-digit',month:'short',year:'numeric'});
+  }
+  render();
+}
+
+function fmtRp(n){ n = Number(n)||0; return 'Rp ' + n.toLocaleString('id-ID'); }
+function fmtDate(d){
+  if(!d) return T[lang].r.none;
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString(lang==='id'?'id-ID':'en-GB', {day:'2-digit',month:'short',year:'numeric'});
+}
+function val(id){ return document.getElementById(id).value.trim(); }
+function checkedVals(containerId){
+  return Array.from(document.querySelectorAll('#'+containerId+' input:checked')).map(i=>i.value);
+}
+function noteSpan(note){ return note ? `<span class="note">${note}</span>` : ''; }
+
+function computeTotals(){
+  const svc = svcById(document.getElementById('service').value);
+  const qty = Number(val('quantity'))||1;
+  const conceptCount = Number(val('conceptCount'))||1;
+  const revisiBlocks = Number(val('revisiExtra'))||0;
+  const addon = Number(val('addonPrice'))||0;
+  const urgent = document.querySelector('input[name=urgent]:checked').value;
+  const isUrgent = (urgent==='Ya' || urgent==='Yes');
+
+  const base = svc ? calcServiceBase(svc, qty) : 0;
+  const conceptExtra = (svc && svc.hasConcept && conceptCount>1) ? (conceptCount-1)*svc.conceptExtraPrice : 0;
+  const revisiCost = revisiBlocks*REVISI_EXTRA_PRICE;
+  const urgentCost = isUrgent ? URGENT_PRICE : 0;
+  const total = base + conceptExtra + revisiCost + urgentCost + addon;
+
+  return {svc, qty, conceptCount, revisiBlocks, addon, isUrgent, base, conceptExtra, revisiCost, urgentCost, total};
+}
+
+function render(){
+  const t = T[lang].r;
+  const c = T[lang].calc;
+  document.getElementById('orderId').textContent = orderId;
+
+  const totals = computeTotals();
+  const outputs = checkedVals('outputs');
+
+  /* --- live calculator box in payment section --- */
+  let calcHtml = '';
+  calcHtml += `<div class="calc-line"><span>${c.base}</span><span class="v">${fmtRp(totals.base)}</span></div>`;
+  if(totals.conceptExtra>0) calcHtml += `<div class="calc-line"><span>${c.concept}</span><span class="v">${fmtRp(totals.conceptExtra)}</span></div>`;
+  if(totals.revisiCost>0) calcHtml += `<div class="calc-line"><span>${c.revisi} (+${totals.revisiBlocks*2}x)</span><span class="v">${fmtRp(totals.revisiCost)}</span></div>`;
+  if(totals.urgentCost>0) calcHtml += `<div class="calc-line"><span>${c.urgent}</span><span class="v">${fmtRp(totals.urgentCost)}</span></div>`;
+  if(totals.addon>0) calcHtml += `<div class="calc-line"><span>${c.addon}</span><span class="v">${fmtRp(totals.addon)}</span></div>`;
+  calcHtml += `<div class="calc-line total"><span>${c.total}</span><span class="v">${fmtRp(totals.total)}</span></div>`;
+  document.getElementById('calcBox').innerHTML = calcHtml;
+
+  /* --- receipt --- */
+  const line = (k,v,note)=> `<div class="rline"><span class="k">${k}</span><span class="v">${v && String(v).length ? v : t.none}${noteSpan(note)}</span></div>`;
+
+  let html = '';
+  html += line(t.orderDate, fmtDate(new Date().toISOString().slice(0,10)));
+  html += line(t.completion, fmtDate(val('deadline')));
+  html += line(t.client, val('fullName'));
+  html += line(t.ig, val('instagram'));
+  html += line(t.wa, val('whatsapp'));
+
+  html += `<div class="rgroup-title">${T[lang].secProject}</div>`;
+  const svcLabel = totals.svc ? svcFullLabel(totals.svc) : '';
+  html += line(t.service, svcLabel);
+  html += line(t.qty, totals.qty + (totals.svc ? ' ' + (lang==='id'?totals.svc.unitLabel_id:totals.svc.unitLabel_en) : ''));
+  if(totals.svc && totals.svc.hasConcept) html += line(t.conceptCount, totals.conceptCount);
+  html += line(t.concept, val('concept'));
+  if(totals.isUrgent) html += line(t.urgentyes, T[lang].yes);
+
+  html += `<div class="rgroup-title">${t.files}</div>`;
+  html += `<div class="files-row">${outputs.length ? outputs.map(m=>`<span class="file-chip">${m}</span>`).join('') : '<span class="rline"><span class="k">'+t.none+'</span></span>'}</div>`;
+
+  html += `<div class="rgroup-title">${c.total}</div>`;
+  html += line(c.base, fmtRp(totals.base));
+  if(totals.conceptExtra>0) html += line(c.concept, fmtRp(totals.conceptExtra));
+  if(totals.revisiCost>0) html += line(c.revisi + ' (+' + (totals.revisiBlocks*2) + 'x)', fmtRp(totals.revisiCost));
+  if(totals.urgentCost>0) html += line(c.urgent, fmtRp(totals.urgentCost));
+  if(totals.addon>0) html += line(c.addon, fmtRp(totals.addon));
+  html += `<div class="rtotal"><span>${c.total}</span><span class="v">${fmtRp(totals.total)}</span></div>`;
+
+  const status = document.querySelector('input[name=status]:checked').value;
+  html += `<div class="rgroup-title">${t.status}</div>`;
+  html += `<div><span class="status-badge ${status==='paid'?'paid':'dp'}">${status==='paid'?t.paidv:t.dp}</span></div>`;
+
+  document.getElementById('receiptBody').innerHTML = html;
+}
+
+/* ---------------- receipt export (PNG / PDF) ---------------- */
+async function captureReceiptCanvas(){
+  const receipt = document.querySelector('.receipt');
+  return await html2canvas(receipt, {
+    backgroundColor:'#F1EFE4',
+    scale:2,
+    useCORS:true
+  });
+}
+
+async function downloadPNG(){
+  const btn = document.getElementById('btnPng');
+  const originalText = btn.textContent;
+  btn.disabled = true; btn.textContent = '...';
+  try{
+    const canvas = await captureReceiptCanvas();
+    const link = document.createElement('a');
+    link.download = orderId + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(err){
+    alert(T[lang].downloadError);
+  }finally{
+    btn.disabled = false; btn.textContent = originalText;
+  }
+}
+
+async function downloadPDF(){
+  const btn = document.getElementById('btnPdf');
+  const originalText = btn.textContent;
+  btn.disabled = true; btn.textContent = '...';
+  try{
+    const canvas = await captureReceiptCanvas();
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+      unit: 'px',
+      format: [canvas.width, canvas.height]
+    });
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+    pdf.save(orderId + '.pdf');
+  }catch(err){
+    alert(T[lang].downloadError);
+  }finally{
+    btn.disabled = false; btn.textContent = originalText;
+  }
+}
+
+/* ---------------- concept visual chips ---------------- */
+const CONCEPT_OPTIONS = [
+  {key:'minimalis', id:'Minimalis', en:'Minimalist'},
+  {key:'playful', id:'Playful', en:'Playful'},
+  {key:'elegan', id:'Elegan', en:'Elegant'},
+  {key:'bold', id:'Bold', en:'Bold'},
+  {key:'vintage', id:'Vintage / Retro', en:'Vintage / Retro'},
+  {key:'dark', id:'Dark Aesthetic', en:'Dark Aesthetic'},
+  {key:'pastel', id:'Pastel Aesthetic', en:'Pastel Aesthetic'},
+  {key:'modern', id:'Modern / Clean', en:'Modern / Clean'},
+  {key:'y2k', id:'Y2K', en:'Y2K'},
+  {key:'other', id:'Lainnya', en:'Other'},
+];
+let conceptSelectedKey = null;
+
+function buildConceptChips(){
+  const wrap = document.getElementById('conceptChips');
+  wrap.innerHTML = CONCEPT_OPTIONS.map(o=>{
+    const label = lang==='id' ? o.id : o.en;
+    const active = conceptSelectedKey===o.key ? 'active' : '';
+    return `<button type="button" class="chip ${active}" onclick="selectConcept('${o.key}')">${label}</button>`;
+  }).join('');
+  const customInput = document.getElementById('conceptCustom');
+  customInput.style.display = conceptSelectedKey==='other' ? 'block' : 'none';
+  customInput.placeholder = lang==='id' ? 'Tulis konsepmu...' : 'Type your own concept...';
+}
+
+function selectConcept(key){
+  conceptSelectedKey = key;
+  buildConceptChips();
+  updateConceptValue();
+  render();
+}
+
+function onConceptCustomInput(){
+  updateConceptValue();
+  render();
+}
+
+function updateConceptValue(){
+  let value = '';
+  if(conceptSelectedKey && conceptSelectedKey!=='other'){
+    const opt = CONCEPT_OPTIONS.find(o=>o.key===conceptSelectedKey);
+    value = lang==='id' ? opt.id : opt.en;
+  } else if(conceptSelectedKey==='other'){
+    value = document.getElementById('conceptCustom').value.trim();
+  }
+  document.getElementById('concept').value = value;
+}
+
+/* ---------------- deadline calendar ---------------- */
+const MONTHS = {
+  id:['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'],
+  en:['January','February','March','April','May','June','July','August','September','October','November','December']
+};
+const WEEKDAYS = {
+  id:['Sen','Sel','Rab','Kam','Jum','Sab','Min'],
+  en:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+};
+let calSelected = null; // Date object or null
+let calViewYear, calViewMonth;
+(function(){
+  const now = new Date();
+  calViewYear = now.getFullYear();
+  calViewMonth = now.getMonth();
+})();
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function dateToISO(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function isSameDay(a,b){ return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+
+function toggleCalendar(e){
+  if(e) e.stopPropagation();
+  const pop = document.getElementById('calendarPop');
+  const trigger = document.getElementById('deadlineDisplay');
+  if(pop.classList.contains('open')){
+    pop.classList.remove('open');
+    return;
+  }
+  const rect = trigger.getBoundingClientRect();
+  const popWidth = Math.min(280, window.innerWidth*0.92);
+  const popHeightEstimate = 340;
+  let left = rect.left;
+  left = Math.min(left, window.innerWidth - popWidth - 12);
+  left = Math.max(12, left);
+  let top = rect.bottom + 8;
+  if(top + popHeightEstimate > window.innerHeight){
+    top = rect.top - popHeightEstimate - 8;
+    if(top < 12) top = 12;
+  }
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+  pop.classList.add('open');
+}
+document.addEventListener('click', function(e){
+  const pop = document.getElementById('calendarPop');
+  const trigger = document.getElementById('deadlineDisplay');
+  if(pop && !pop.contains(e.target) && e.target!==trigger && !trigger.contains(e.target)){
+    pop.classList.remove('open');
+  }
+});
+window.addEventListener('scroll', function(){
+  document.getElementById('calendarPop').classList.remove('open');
+}, true);
+window.addEventListener('resize', function(){
+  document.getElementById('calendarPop').classList.remove('open');
+});
+
+function calShift(dir){
+  calViewMonth += dir;
+  if(calViewMonth<0){ calViewMonth=11; calViewYear--; }
+  if(calViewMonth>11){ calViewMonth=0; calViewYear++; }
+  calRender();
+}
+
+function calQuickPick(days){
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+days);
+  calSelected = d;
+  calViewYear = d.getFullYear();
+  calViewMonth = d.getMonth();
+  applyCalSelection();
+  calRender();
+}
+
+function calPickDay(y,m,day){
+  const d = new Date(y,m,day);
+  d.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  if(d < today) return;
+  calSelected = d;
+  applyCalSelection();
+  calRender();
+}
+
+function applyCalSelection(){
+  document.getElementById('deadline').value = dateToISO(calSelected);
+  const disp = document.getElementById('deadlineDisplayText');
+  disp.textContent = calSelected.toLocaleDateString(lang==='id'?'id-ID':'en-GB', {day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('deadlineDisplay').classList.add('has-value');
+  document.getElementById('calendarPop').classList.remove('open');
+  render();
+}
+
+function calRender(){
+  document.getElementById('calMonthLabel').textContent = MONTHS[lang][calViewMonth] + ' ' + calViewYear;
+  document.getElementById('calWeekdays').innerHTML = WEEKDAYS[lang].map(w=>`<span>${w}</span>`).join('');
+
+  const quickWrap = document.getElementById('calQuick');
+  const quickDefs = lang==='id'
+    ? [['Besok',1],['+3 hari',3],['+1 minggu',7],['+2 minggu',14]]
+    : [['Tomorrow',1],['+3 days',3],['+1 week',7],['+2 weeks',14]];
+  quickWrap.innerHTML = quickDefs.map(([label,d])=>`<button type="button" onclick="calQuickPick(${d})">${label}</button>`).join('');
+
+  const first = new Date(calViewYear, calViewMonth, 1);
+  let startOffset = first.getDay()-1; // Monday-start
+  if(startOffset<0) startOffset = 6;
+  const daysInMonth = new Date(calViewYear, calViewMonth+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let html = '';
+  for(let i=0;i<startOffset;i++) html += `<span class="cal-day empty"></span>`;
+  for(let day=1; day<=daysInMonth; day++){
+    const d = new Date(calViewYear, calViewMonth, day);
+    const isPast = d < today;
+    const isToday = isSameDay(d, today);
+    const isSelected = isSameDay(d, calSelected);
+    const cls = ['cal-day'];
+    if(isPast) cls.push('disabled');
+    if(isToday) cls.push('today');
+    if(isSelected) cls.push('selected');
+    html += `<span class="${cls.join(' ')}" onclick="calPickDay(${calViewYear},${calViewMonth},${day})">${day}</span>`;
+  }
+  document.getElementById('calDays').innerHTML = html;
+}
+
+/* ---------------- init ---------------- */
+buildServiceSelect();
+onServiceChange();
+buildConceptChips();
+renderInfoPanel();
+calRender();
+render();
+</script>
+</body>
+</html>
